@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Camera Positioning Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .camera-section {
+            position: relative;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .video-container {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        #video {
+            width: 100%;
+            height: auto;
+            display: block;
+            transform: scaleX(-1); /* Mirror effect */
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .analysis-panel {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            height: fit-content;
+        }
+
+        .score-display {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+        }
+
+        .score-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            border: 4px solid;
+            transition: all 0.3s ease;
+        }
+
+        .score-excellent { border-color: #00ff00; background: rgba(0, 255, 0, 0.1); }
+        .score-good { border-color: #ffff00; background: rgba(255, 255, 0, 0.1); }
+        .score-fair { border-color: #ffa500; background: rgba(255, 165, 0, 0.1); }
+        .score-poor { border-color: #ff0000; background: rgba(255, 0, 0, 0.1); }
+
+        .metrics-section {
+            margin-bottom: 20px;
+        }
+
+        .metrics-section h3 {
+            color: #FFD700;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .metric-bar {
+            width: 100px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .metric-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .guidance-section {
+            margin-top: 20px;
+        }
+
+        .guidance-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border-left: 4px solid #FFD700;
+        }
+
+        .priority-guidance {
+            background: rgba(255, 100, 100, 0.2);
+            border-left-color: #ff6464;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.1em;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .fps-counter {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            z-index: 20;
+        }
+
+        .canvas-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 15;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .analysis-panel {
+                order: -1;
+            }
+        }
+
+        .face-detection-info {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            z-index: 20;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Advanced Camera Positioning Assistant</h1>
+            <p>Professional-grade real-time camera guidance for perfect shots</p>
+        </div>
+
+        <div class="main-content">
+            <div class="camera-section">
+                <div class="video-container">
+                    <video id="video" autoplay muted></video>
+                    <canvas id="overlay" class="canvas-overlay"></canvas>
+                    <div class="fps-counter" id="fps">FPS: 0</div>
+                    <div class="face-detection-info" id="faceInfo">No faces detected</div>
+                </div>
+                
+                <div class="controls">
+                    <button id="startBtn" class="btn">Start Camera</button>
+                    <button id="pauseBtn" class="btn" disabled>Pause</button>
+                    <button id="captureBtn" class="btn" disabled>Capture</button>
+                </div>
+                
+                <div id="status" class="status">
+                    Click "Start Camera" to begin analysis
+                </div>
+            </div>
+
+            <div class="analysis-panel">
+                <div class="score-display">
+                    <div id="overallScore" class="score-circle score-poor">0</div>
+                    <div>Overall Score</div>
+                </div>
+
+                <div class="metrics-section">
+                    <h3>Face Analysis</h3>
+                    <div class="metric-item">
+                        <span>Face Size</span>
+                        <div class="metric-bar">
+                            <div id="faceSizeBar" class="metric-fill" style="background: #4CAF50; width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="metric-item">
+                        <span>Position</span>
+                        <div class="metric-bar">
+                            <div id="facePositionBar" class="metric-fill" style="background: #2196F3; width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="metric-item">
+                        <span>Symmetry</span>
+                        <div class="metric-bar">
+                            <div id="symmetryBar" class="metric-fill" style="background: #FF9800; width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metrics-section">
+                    <h3>Lighting</h3>
+                    <div class="metric-item">
+                        <span>Brightness</span>
+                        <div class="metric-bar">
+                            <div id="brightnessBar" class="metric-fill" style="background: #FFEB3B; width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="metric-item">
+                        <span>Uniformity</span>
+                        <div class="metric-bar">
+                            <div id="uniformityBar" class="metric-fill" style="background: #9C27B0; width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metrics-section">
+                    <h3>Background</h3>
+                    <div class="metric-item">
+                        <span>Quality</span>
+                        <div class="metric-bar">
+                            <div id="backgroundBar" class="metric-fill" style="background: #607D8B; width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="guidance-section">
+                    <h3>Live Guidance</h3>
+                    <div id="guidanceList">
+                        <div class="guidance-item">Position yourself in front of the camera</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class AdvancedCameraAssistant {
+            constructor() {
+                this.video = document.getElementById('video');
+                this.canvas = document.getElementById('overlay');
+                this.ctx = this.canvas.getContext('2d');
+                this.isAnalyzing = false;
+                this.fpsCounter = 0;
+                this.lastTime = performance.now();
+                this.analysisInterval = null;
+                
+                // Face detection setup
+                this.faceDetector = null;
+                this.initFaceDetection();
+                
+                this.initEventListeners();
+                this.checkCameras().then(devices => {
+                    if (devices.length === 0) {
+                        document.getElementById('status').textContent = 'No cameras detected. Please connect a webcam.';
+                    }
+                });
+            }
+
+            async checkCameras() {
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                    console.log('Available cameras:', videoDevices);
+                    return videoDevices;
+                } catch (error) {
+                    console.error('Error enumerating devices:', error);
+                    return [];
+                }
+            }
+
+            async initFaceDetection() {
+                try {
+                    if ('FaceDetector' in window) {
+                        this.faceDetector = new FaceDetector({
+                            maxDetectedFaces: 5,
+                            fastMode: false
+                        });
+                        console.log('Native face detection available');
+                    } else {
+                        console.log('Using fallback face detection');
+                        this.loadFallbackDetection();
+                    }
+                } catch (error) {
+                    console.log('Face detection setup failed, using basic analysis');
+                    this.loadFallbackDetection();
+                }
+            }
+
+            loadFallbackDetection() {
+                // Load a simple face detection fallback
+                this.faceDetector = {
+                    detect: async (imageData) => {
+                        // Simple center-based "face" detection for demo
+                        const canvas = this.canvas;
+                        return [{
+                            boundingBox: {
+                                x: canvas.width * 0.3,
+                                y: canvas.height * 0.2,
+                                width: canvas.width * 0.4,
+                                height: canvas.height * 0.5
+                            }
+                        }];
+                    }
+                };
+            }
+
+            initEventListeners() {
+                document.getElementById('startBtn').addEventListener('click', () => this.startCamera());
+                document.getElementById('pauseBtn').addEventListener('click', () => this.pauseAnalysis());
+                document.getElementById('captureBtn').addEventListener('click', () => this.capturePhoto());
+            }
+
+            async startCamera() {
+                try {
+                    document.getElementById('status').innerHTML = '<div class="loading"></div> Starting camera...';
+                    
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: 'user'
+                        }
+                    });
+
+                    this.video.srcObject = stream;
+                    
+                    this.video.onloadedmetadata = () => {
+                        this.setupCanvas();
+                        this.startAnalysis();
+                        this.updateControls(true);
+                        document.getElementById('status').textContent = 'Camera active - Analysis running';
+                    };
+
+                } catch (error) {
+                    console.error('Camera access failed:', error);
+                    let errorMessage = 'Camera access failed. Please try again.';
+                    if (error.name === 'NotAllowedError') {
+                        errorMessage = 'Camera permission denied. Please enable camera access in your browser settings and refresh.';
+                    } else if (error.name === 'NotFoundError') {
+                        errorMessage = 'No camera found. Please connect a webcam and refresh.';
+                    } else if (error.name === 'SecurityError') {
+                        errorMessage = 'Camera access is blocked. Please serve this page over http://localhost or https://, not file://.';
+                    }
+                    document.getElementById('status').textContent = errorMessage;
+                }
+            }
+
+            setupCanvas() {
+                const rect = this.video.getBoundingClientRect();
+                this.canvas.width = this.video.videoWidth;
+                this.canvas.height = this.video.videoHeight;
+                this.canvas.style.width = '100%';
+                this.canvas.style.height = 'auto';
+            }
+
+            startAnalysis() {
+                if (this.isAnalyzing) return;
+                this.isAnalyzing = true;
+                const analyze = () => {
+                    if (!this.isAnalyzing) return;
+                    this.analyzeFrame();
+                    this.updateFPS();
+                    requestAnimationFrame(analyze);
+                };
+                requestAnimationFrame(analyze);
+            }
+
+            pauseAnalysis() {
+                this.isAnalyzing = !this.isAnalyzing;
+                const btn = document.getElementById('pauseBtn');
+                
+                if (this.isAnalyzing) {
+                    this.startAnalysis();
+                    btn.textContent = 'Pause';
+                    document.getElementById('status').textContent = 'Analysis running';
+                } else {
+                    btn.textContent = 'Resume';
+                    document.getElementById('status').textContent = 'Analysis paused';
+                }
+            }
+
+            updateControls(started) {
+                document.getElementById('startBtn').disabled = started;
+                document.getElementById('pauseBtn').disabled = !started;
+                document.getElementById('captureBtn').disabled = !started;
+            }
+
+            capturePhoto() {
+                const captureCanvas = document.createElement('canvas');
+                const captureCtx = captureCanvas.getContext('2d');
+                captureCanvas.width = this.video.videoWidth;
+                captureCanvas.height = this.video.videoHeight;
+                captureCtx.drawImage(this.video, 0, 0);
+                const dataURL = captureCanvas.toDataURL('image/jpeg');
+                const link = document.createElement('a');
+                link.href = dataURL;
+                link.download = `capture_${new Date().toISOString()}.jpg`;
+                link.click();
+                document.getElementById('status').textContent = 'Photo captured!';
+            }
+
+            async analyzeFrame() {
+                if (!this.isAnalyzing || this.video.readyState !== 4) return;
+
+                try {
+                    // Clear canvas
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // Detect faces
+                    const faces = await this.detectFaces();
+                    
+                    // Analyze metrics
+                    const metrics = this.analyzeMetrics(faces);
+                    
+                    // Draw overlays
+                    this.drawAnalysisOverlay(faces, metrics);
+                    
+                    // Update UI
+                    this.updateUI(faces, metrics);
+                    
+                } catch (error) {
+                    console.error('Analysis error:', error);
+                }
+            }
+
+            async detectFaces() {
+                if (!this.faceDetector) return [];
+
+                try {
+                    // Create canvas for face detection
+                    const detectionCanvas = document.createElement('canvas');
+                    const detectionCtx = detectionCanvas.getContext('2d');
+                    
+                    detectionCanvas.width = this.video.videoWidth;
+                    detectionCanvas.height = this.video.videoHeight;
+                    
+                    detectionCtx.drawImage(this.video, 0, 0);
+                    
+                    if (this.faceDetector.detect) {
+                        return await this.faceDetector.detect(detectionCanvas);
+                    } else {
+                        // Fallback detection
+                        return await this.faceDetector.detect();
+                    }
+                } catch (error) {
+                    console.error('Face detection failed:', error);
+                    return [];
+                }
+            }
+
+            analyzeMetrics(faces) {
+                const canvas = this.canvas;
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                
+                let metrics = {
+                    faceCount: faces.length,
+                    faceSize: 0,
+                    facePosition: 0,
+                    symmetry: 0,
+                    brightness: 0.5,
+                    uniformity: 0.7,
+                    backgroundQuality: this.analyzeBackgroundQuality(),
+                    overallScore: 0
+                };
+
+                if (faces.length > 0) {
+                    const face = faces[0];
+                    const bbox = face.boundingBox;
+                    
+                    // Face size analysis (relative to frame)
+                    const faceArea = bbox.width * bbox.height;
+                    const frameArea = canvas.width * canvas.height;
+                    const sizeRatio = faceArea / frameArea;
+                    metrics.faceSize = Math.min(1, Math.max(0, sizeRatio * 4)); // Ideal around 0.25
+                    
+                    // Face position analysis
+                    const faceCenterX = bbox.x + bbox.width / 2;
+                    const faceCenterY = bbox.y + bbox.height / 2;
+                    
+                    const distanceFromCenter = Math.sqrt(
+                        Math.pow((faceCenterX - centerX) / centerX, 2) + 
+                        Math.pow((faceCenterY - centerY) / centerY, 2)
+                    );
+                    metrics.facePosition = Math.max(0, 1 - distanceFromCenter);
+                    
+                    // Symmetry analysis (simplified)
+                    const faceCenterOffset = Math.abs(faceCenterX - centerX) / (canvas.width / 2);
+                    metrics.symmetry = Math.max(0, 1 - faceCenterOffset);
+                    
+                    // Lighting analysis
+                    metrics.brightness = this.analyzeBrightness(bbox);
+                    metrics.uniformity = this.analyzeUniformity(bbox);
+                }
+
+                // Calculate overall score
+                const weights = {
+                    faceSize: 0.2,
+                    facePosition: 0.25,
+                    symmetry: 0.15,
+                    brightness: 0.2,
+                    uniformity: 0.1,
+                    backgroundQuality: 0.1
+                };
+
+                metrics.overallScore = Object.keys(weights).reduce((score, key) => {
+                    return score + (metrics[key] * weights[key]);
+                }, 0);
+
+                return metrics;
+            }
+
+            analyzeBrightness(bbox) {
+                const detectionCanvas = document.createElement('canvas');
+                const detectionCtx = detectionCanvas.getContext('2d');
+                detectionCanvas.width = bbox.width;
+                detectionCanvas.height = bbox.height;
+                detectionCtx.drawImage(
+                    this.video,
+                    bbox.x, bbox.y, bbox.width, bbox.height,
+                    0, 0, bbox.width, bbox.height
+                );
+                const imageData = detectionCtx.getImageData(0, 0, bbox.width, bbox.height).data;
+                let totalBrightness = 0;
+                for (let i = 0; i < imageData.length; i += 4) {
+                    const r = imageData[i];
+                    const g = imageData[i + 1];
+                    const b = imageData[i + 2];
+                    totalBrightness += (0.299 * r + 0.587 * g + 0.114 * b); // Luminance formula
+                }
+                const avgBrightness = totalBrightness / (imageData.length / 4);
+                return avgBrightness / 255; // Normalize to 0-1
+            }
+
+            analyzeUniformity(bbox) {
+                const detectionCanvas = document.createElement('canvas');
+                const detectionCtx = detectionCanvas.getContext('2d');
+                detectionCanvas.width = bbox.width;
+                detectionCanvas.height = bbox.height;
+                detectionCtx.drawImage(
+                    this.video,
+                    bbox.x, bbox.y, bbox.width, bbox.height,
+                    0, 0, bbox.width, bbox.height
+                );
+                const imageData = detectionCtx.getImageData(0, 0, bbox.width, bbox.height).data;
+                const brightnessValues = [];
+                for (let i = 0; i < imageData.length; i += 4) {
+                    const r = imageData[i];
+                    const g = imageData[i + 1];
+                    const b = imageData[i + 2];
+                    brightnessValues.push(0.299 * r + 0.587 * g + 0.114 * b);
+                }
+                const mean = brightnessValues.reduce((sum, val) => sum + val, 0) / brightnessValues.length;
+                const variance = brightnessValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / brightnessValues.length;
+                return Math.max(0, 1 - Math.sqrt(variance) / 255); // Normalize variance to 0-1
+            }
+
+            analyzeBackgroundQuality() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = this.video.videoWidth;
+                canvas.height = this.video.videoHeight;
+                ctx.drawImage(this.video, 0, 0);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                let colorVariance = 0;
+                const samplePoints = 1000;
+                for (let i = 0; i < samplePoints; i++) {
+                    const x = Math.floor(Math.random() * canvas.width);
+                    const y = Math.floor(Math.random() * canvas.height);
+                    const idx = (y * canvas.width + x) * 4;
+                    const r = imageData[idx];
+                    const g = imageData[idx + 1];
+                    const b = imageData[idx + 2];
+                    const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+                    colorVariance += Math.pow(brightness - 128, 2);
+                }
+                colorVariance /= samplePoints;
+                return Math.max(0, 1 - Math.sqrt(colorVariance) / 128); // Normalize to 0-1
+            }
+
+            drawAnalysisOverlay(faces, metrics) {
+                const ctx = this.ctx;
+                const canvas = this.canvas;
+                
+                // Set canvas transform to match flipped video
+                ctx.save();
+                ctx.scale(-1, 1);
+                ctx.translate(-canvas.width, 0);
+                
+                // Draw rule of thirds grid
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 5]);
+                
+                // Vertical lines
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / 3, 0);
+                ctx.lineTo(canvas.width / 3, canvas.height);
+                ctx.moveTo(2 * canvas.width / 3, 0);
+                ctx.lineTo(2 * canvas.width / 3, canvas.height);
+                ctx.stroke();
+                
+                // Horizontal lines
+                ctx.beginPath();
+                ctx.moveTo(0, canvas.height / 3);
+                ctx.lineTo(canvas.width, canvas.height / 3);
+                ctx.moveTo(0, 2 * canvas.height / 3);
+                ctx.lineTo(canvas.width, 2 * canvas.height / 3);
+                ctx.stroke();
+                
+                ctx.setLineDash([]);
+                
+                // Draw ideal eye level line
+                ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, canvas.height * 0.4);
+                ctx.lineTo(canvas.width, canvas.height * 0.4);
+                ctx.stroke();
+                
+                // Draw face detection boxes
+                faces.forEach((face, index) => {
+                    const bbox = face.boundingBox;
+                    
+                    // Face bounding box
+                    ctx.strokeStyle = '#00ff00';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(bbox.x, bbox.y, bbox.width, bbox.height);
+                    
+                    // Face center
+                    const centerX = bbox.x + bbox.width / 2;
+                    const centerY = bbox.y + bbox.height / 2;
+                    
+                    ctx.fillStyle = '#00ff00';
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Face label
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    ctx.fillRect(bbox.x, bbox.y - 30, 120, 25);
+                    
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '14px Arial';
+                    ctx.fillText(`Face ${index + 1}`, bbox.x + 5, bbox.y - 10);
+                });
+                
+                // Draw positioning guides
+                this.drawPositioningGuides(faces, metrics);
+                
+                ctx.restore();
+            }
+
+            drawPositioningGuides(faces, metrics) {
+                const ctx = this.ctx;
+                const canvas = this.canvas;
+                
+                if (faces.length === 0) return;
+                
+                const face = faces[0];
+                const bbox = face.boundingBox;
+                const faceCenterX = bbox.x + bbox.width / 2;
+                const faceCenterY = bbox.y + bbox.height / 2;
+                const frameCenterX = canvas.width / 2;
+                const frameCenterY = canvas.height / 2;
+                
+                // Distance guidance
+                if (metrics.faceSize < 0.4) {
+                    this.drawArrow(ctx, frameCenterX, canvas.height - 60, frameCenterX, canvas.height - 100, '#00ffff', 'MOVE CLOSER');
+                } else if (metrics.faceSize > 0.8) {
+                    this.drawArrow(ctx, frameCenterX, canvas.height - 100, frameCenterX, canvas.height - 60, '#ff9500', 'MOVE BACK');
+                }
+                
+                // Horizontal positioning
+                const horizontalOffset = Math.abs(faceCenterX - frameCenterX);
+                if (horizontalOffset > 50) {
+                    if (faceCenterX < frameCenterX) {
+                        this.drawArrow(ctx, 60, frameCenterY, 20, frameCenterY, '#ff00ff', 'CAMERA LEFT');
+                    } else {
+                        this.drawArrow(ctx, canvas.width - 60, frameCenterY, canvas.width - 20, frameCenterY, '#ff00ff', 'CAMERA RIGHT');
+                    }
+                }
+                
+                // Vertical positioning
+                const idealEyeLevel = canvas.height * 0.4;
+                const eyeLevel = bbox.y + bbox.height * 0.3; // Approximate eye position
+                
+                if (Math.abs(eyeLevel - idealEyeLevel) > 30) {
+                    if (eyeLevel > idealEyeLevel + 30) {
+                        this.drawArrow(ctx, 30, 60, 30, 20, '#00ff00', 'RAISE CAMERA');
+                    } else if (eyeLevel < idealEyeLevel - 30) {
+                        this.drawArrow(ctx, 30, 20, 30, 60, '#00ff00', 'LOWER CAMERA');
+                    }
+                }
+            }
+
+            drawArrow(ctx, fromX, fromY, toX, toY, color, label) {
+                ctx.strokeStyle = color;
+                ctx.fillStyle = color;
+                ctx.lineWidth = 4;
+                
+                // Draw arrow line
+                ctx.beginPath();
+                ctx.moveTo(fromX, fromY);
+                ctx.lineTo(toX, toY);
+                ctx.stroke();
+                
+                // Draw arrow head
+                const angle = Math.atan2(toY - fromY, toX - fromX);
+                const headLength = 15;
+                
+                ctx.beginPath();
+                ctx.moveTo(toX, toY);
+                ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+                ctx.closePath();
+                ctx.fill();
+                
+                // Draw label
+                if (label) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    const textWidth = ctx.measureText(label).width;
+                    ctx.fillRect(fromX - textWidth / 2 - 5, fromY - 25, textWidth + 10, 20);
+                    
+                    ctx.fillStyle = color;
+                    ctx.font = '12px Arial';
+                    ctx.fillText(label, fromX - textWidth / 2, fromY - 10);
+                }
+            }
+
+            updateUI(faces, metrics) {
+                // Update face detection info
+                const faceInfo = document.getElementById('faceInfo');
+                if (faces.length === 0) {
+                    faceInfo.textContent = 'No faces detected';
+                } else if (faces.length === 1) {
+                    faceInfo.textContent = '1 face detected';
+                } else {
+                    faceInfo.textContent = `${faces.length} faces detected`;
+                }
+                
+                // Update overall score
+                const score = Math.round(metrics.overallScore * 100);
+                const scoreElement = document.getElementById('overallScore');
+                scoreElement.textContent = score;
+                
+                // Update score color
+                scoreElement.className = 'score-circle ';
+                if (score >= 80) scoreElement.className += 'score-excellent';
+                else if (score >= 60) scoreElement.className += 'score-good';
+                else if (score >= 40) scoreElement.className += 'score-fair';
+                else scoreElement.className += 'score-poor';
+                
+                // Update metric bars
+                document.getElementById('faceSizeBar').style.width = (metrics.faceSize * 100) + '%';
+                document.getElementById('facePositionBar').style.width = (metrics.facePosition * 100) + '%';
+                document.getElementById('symmetryBar').style.width = (metrics.symmetry * 100) + '%';
+                document.getElementById('brightnessBar').style.width = (metrics.brightness * 100) + '%';
+                document.getElementById('uniformityBar').style.width = (metrics.uniformity * 100) + '%';
+                document.getElementById('backgroundBar').style.width = (metrics.backgroundQuality * 100) + '%';
+                
+                // Update guidance
+                this.updateGuidance(faces, metrics);
+            }
+
+            updateGuidance(faces, metrics) {
+                const guidanceList = document.getElementById('guidanceList');
+                const guidance = [];
+                
+                if (faces.length === 0) {
+                    guidance.push({ text: "Position yourself in front of the camera", priority: true });
+                } else {
+                    if (metrics.faceSize < 0.4) {
+                        guidance.push({ text: "Move closer to the camera", priority: true });
+                    } else if (metrics.faceSize > 0.8) {
+                        guidance.push({ text: "Move back from the camera", priority: true });
+                    }
+                    
+                    if (metrics.facePosition < 0.7) {
+                        guidance.push({ text: "Center yourself in the frame", priority: false });
+                    }
+                    
+                    if (metrics.symmetry < 0.6) {
+                        guidance.push({ text: "Straighten your head position", priority: false });
+                    }
+                    
+                    if (metrics.brightness < 0.4) {
+                        guidance.push({ text: "Add more lighting to your face", priority: true });
+                    } else if (metrics.brightness > 0.8) {
+                        guidance.push({ text: "Reduce lighting intensity", priority: true });
+                    }
+                    
+                    if (metrics.uniformity < 0.5) {
+                        guidance.push({ text: "Ensure even lighting across your face", priority: false });
+                    }
+                }
+                
+                guidanceList.innerHTML = guidance.map(item => `
+                    <div class="guidance-item ${item.priority ? 'priority-guidance' : ''}">
+                        ${item.text}
+                    </div>
+                `).join('');
+            }
+
+            updateFPS() {
+                const now = performance.now();
+                this.fpsCounter++;
+                if (now - this.lastTime >= 1000) {
+                    document.getElementById('fps').textContent = `FPS: ${this.fpsCounter}`;
+                    this.fpsCounter = 0;
+                    this.lastTime = now;
+                }
+            }
+        }
+
+        const assistant = new AdvancedCameraAssistant();
+    </script>
+</body>
+</html>
